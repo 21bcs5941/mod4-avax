@@ -6,38 +6,64 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 contract DegenToken is ERC20, Ownable, ERC20Burnable {
+    struct NFTData {
+        uint256 id;
+        string name;
+        uint256 amount;
+    }
 
-    constructor() ERC20("Degen", "DGN") {}
+    mapping(uint256 => NFTData) private nftData;
+    uint256 private totalNFTs;
+
+    event NFTAdded(uint256 indexed id, string name, uint256 amount);
+    event NFTRedeemed(uint256 indexed id, address indexed redeemer, uint256 amount);
+
+    constructor() ERC20("Degen", "DGN") {
+        _addNFT("ProPlayer NFT value", 200);
+        _addNFT("SuperNinja value", 100);
+        _addNFT("DegenCap value", 75);
+    }
+
+    function _addNFT(string memory name, uint256 amount) internal {
+        totalNFTs++;
+        nftData[totalNFTs] = NFTData(totalNFTs, name, amount);
+        emit NFTAdded(totalNFTs, name, amount);
+    }
 
     function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
     }
 
-    function transferTokens(address _receiver, uint256 amount) external {
-        require(balanceOf(msg.sender) >= amount, "Your account balance is not sufficient");
-        transfer(_receiver, amount);
+    function transferTokens(address receiver, uint256 amount) external {
+        require(balanceOf(msg.sender) >= amount, "Insufficient balance");
+        _transfer(msg.sender, receiver, amount);
     }
 
-    function checkBalance() external view returns (uint) {
-        return balanceOf(msg.sender);
+    function burnTokens(uint256 amount) external {
+        _burn(msg.sender, amount);
     }
 
-    function redeemTokens(uint choice) external payable {
-        require(choice >= 1 && choice <= 3, "Choice should be in between 1 to 3");
-
-        if (choice == 1) {
-            require(balanceOf(msg.sender) >= 200, "Insufficient balance");
-            _transfer(msg.sender, owner(), 200);
-        } else if (choice == 2) {
-            require(balanceOf(msg.sender) >= 100, "Insufficient balance");
-            _transfer(msg.sender, owner(), 100);
-        } else {
-            require(balanceOf(msg.sender) >= 75, "Insufficient balance");
-            _transfer(msg.sender, owner(), 75);
+    function gameStore() public view returns (NFTData[] memory) {
+        NFTData[] memory availableNFTs = new NFTData[](totalNFTs);
+        for (uint256 i = 1; i <= totalNFTs; i++) {
+            availableNFTs[i - 1] = nftData[i];
         }
+        return availableNFTs;
     }
 
-    function gameStore() external pure returns (string memory) {
-        return "1. ProPlayer NFT value = 200\n2. SuperNinja value = 100\n3. DegenCap value = 75";
+    function addNFT(string memory name, uint256 amount) public onlyOwner {
+        _addNFT(name, amount);
+    }
+
+    function redeemTokens(uint256 choice) external {
+        require(choice >= 1 && choice <= totalNFTs, "Invalid selection");
+
+        NFTData memory selectedNFT = nftData[choice];
+        uint256 tokenAmount = selectedNFT.amount;
+        require(balanceOf(msg.sender) >= tokenAmount, "Insufficient balance");
+
+        _transfer(msg.sender, owner(), tokenAmount);
+        delete nftData[choice];
+        emit NFTRedeemed(choice, msg.sender, tokenAmount);
     }
 }
