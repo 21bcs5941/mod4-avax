@@ -27,7 +27,7 @@ In this assessment, we have to first create a NFT token and deploy it to fuji te
       
 ##### Faucet Link : https://faucet.avax.network/
 
-#### My contract Address :0xF5062780D71ab6De9c29e19234C1c94Aac54BD26
+#### My contract Address : 0x9Ab473624387438ddE3B155582f885afE959E708
 
 ### Commands
     * npm i
